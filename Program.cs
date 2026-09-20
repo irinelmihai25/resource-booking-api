@@ -24,4 +24,12 @@ var resources=new List<Resource>();
 resources.Add(resource);
 resources.Add(projector);
 app.MapGet("/resources",() => resources);
+app.MapGet("/resources/{id:int}",(int id) => {
+foreach (var item in resources)
+{
+    if(item.Id==id)
+        return Results.Ok(item);
+}
+return Results.NotFound();
+});
 app.Run();
