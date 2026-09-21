@@ -13,5 +13,13 @@ public class Booking
         else
             return false;
     }
+    public bool Overlaps(Booking other)
+    {   
+        if(this.ResourceId!=other.ResourceId){
+            return false;}
+        if(this.End<=other.Start || this.Start >=other.End){
+            return false;}
+        return true;
+    }
     
 }

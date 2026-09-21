@@ -51,4 +51,5 @@ app.MapGet("/bookings/{id:int}",(int id) =>
     }
 return Results.NotFound();
 });
+Console.WriteLine(booking.Overlaps(secondBooking));
 app.Run();
