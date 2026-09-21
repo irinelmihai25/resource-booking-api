@@ -32,4 +32,23 @@ foreach (var item in resources)
 }
 return Results.NotFound();
 });
+var secondBooking=new Booking();
+secondBooking.Id=2;
+secondBooking.ResourceId=resource.Id;
+secondBooking.Start=new DateTimeOffset(2026,9,20,10,0,0,TimeSpan.FromHours(3));
+secondBooking.End=new DateTimeOffset(2026,9,20,11,0,0,TimeSpan.FromHours(3));
+var bookings=new List<Booking>();
+bookings.Add(booking);
+bookings.Add(secondBooking);
+app.MapGet("/bookings",() => bookings);
+app.MapGet("/bookings/{id:int}",(int id) =>
+{
+    {
+        foreach(var bitem in bookings)
+            if(bitem.Id==id)
+             return Results.Ok(bitem);
+             
+    }
+return Results.NotFound();
+});
 app.Run();
