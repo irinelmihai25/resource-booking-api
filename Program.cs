@@ -52,4 +52,14 @@ app.MapGet("/bookings/{id:int}",(int id) =>
 return Results.NotFound();
 });
 Console.WriteLine(booking.Overlaps(secondBooking));
+var candidate=new Booking();
+candidate.Id=3;
+candidate.ResourceId=resource.Id;
+candidate.Start=new DateTimeOffset(2026,9,20,10,30,0,TimeSpan.FromHours(3));
+candidate.End=new DateTimeOffset(2026,9,20,11,30,0,TimeSpan.FromHours(3));
+foreach(var i in bookings)
+{
+    if(candidate.Overlaps(i))
+        Console.WriteLine(i.Id);
+}
 app.Run();
