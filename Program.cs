@@ -83,7 +83,18 @@ app.MapPost("/bookings",(Booking newBooking) =>
     newBooking.Id=nextBookingId;
     nextBookingId++;
     bookings.Add(newBooking);
-    return Results.Ok(newBooking);
+    return Results.Created($"/bookings/{newBooking.Id}",newBooking);
+}
+);
+int nextResourceId=3;
+app.MapPost("/resources",(Resource newResource)=>
+{   
+    if(string.IsNullOrWhiteSpace(newResource.Name))
+        return Results.BadRequest("Nu s a introdus numele");
+    newResource.Id=nextResourceId;
+    nextResourceId++;
+    resources.Add(newResource);
+    return Results.Created($"/resources/{newResource.Id}",newResource);
 }
 );
 app.Run();
