@@ -97,4 +97,16 @@ app.MapPost("/resources",(Resource newResource)=>
     return Results.Created($"/resources/{newResource.Id}",newResource);
 }
 );
+app.MapGet("/resources/{resourceId:int}/bookings",(int resourceId) =>{
+    var matchingBookings=new List<Booking>();
+    foreach(var item in bookings)
+    {
+        if (item.ResourceId == resourceId)
+        {
+            matchingBookings.Add(item);
+        }
+    }
+    return Results.Ok(matchingBookings);
+
+});
 app.Run();
