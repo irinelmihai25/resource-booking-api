@@ -62,4 +62,28 @@ foreach(var i in bookings)
     if(candidate.Overlaps(i))
         Console.WriteLine(i.Id);
 }
+int nextBookingId=3;
+app.MapPost("/bookings",(Booking newBooking) =>
+{   bool resourceExists=false;
+    foreach(var item in resources)
+    {
+        if(newBooking.ResourceId==item.Id)
+            resourceExists=true;
+    }
+    if(!resourceExists)
+        return Results.BadRequest("Resursa nu exista.");
+    if(newBooking.HasValidPeriod()==false)
+        return Results.BadRequest("Sfarsitul trebuie sa fie dupa ora de inceput.");
+    foreach(var item in bookings)
+    {
+        if(newBooking.Overlaps(item))
+            return Results.Conflict("Resursa este deja rezervata in acest interval.");
+    }
+    
+    newBooking.Id=nextBookingId;
+    nextBookingId++;
+    bookings.Add(newBooking);
+    return Results.Ok(newBooking);
+}
+);
 app.Run();
