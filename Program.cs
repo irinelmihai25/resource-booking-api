@@ -1,5 +1,5 @@
 using ResourceBooking.Models;
-
+using ResourceBooking.Requests;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
@@ -63,8 +63,12 @@ foreach(var i in bookings)
         Console.WriteLine(i.Id);
 }
 int nextBookingId=3;
-app.MapPost("/bookings",(Booking newBooking) =>
-{   bool resourceExists=false;
+app.MapPost("/bookings",(CreateBookingRequest request) =>
+{   var newBooking=new Booking();
+    newBooking.ResourceId=request.ResourceId;
+    newBooking.Start=request.Start;
+    newBooking.End=request.End;
+    bool resourceExists=false;
     foreach(var item in resources)
     {
         if(newBooking.ResourceId==item.Id)
