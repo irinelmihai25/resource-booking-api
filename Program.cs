@@ -45,9 +45,9 @@ app.MapGet("/bookings",() => bookings);
 app.MapGet("/bookings/{id:int}",(int id) =>
 {
     {
-        foreach(var bitem in bookings)
-            if(bitem.Id==id)
-             return Results.Ok(bitem);
+        foreach(var item in bookings)
+            if(item.Id==id)
+             return Results.Ok(item);
              
     }
 return Results.NotFound();
@@ -116,4 +116,17 @@ app.MapGet("/resources/{resourceId:int}/bookings",(int resourceId) =>{
     return Results.Ok(matchingBookings);
 
 });
+app.MapPost("/bookings/{id:int}/cancel",(int id)=>
+{
+    foreach(var item in bookings)
+    {
+        if (item.Id == id)
+        {
+            item.IsCancelled=true;
+            return Results.Ok(item);
+        }
+    }
+    return Results.NotFound("Rezervarea nu exista");
+}
+);
 app.Run();
