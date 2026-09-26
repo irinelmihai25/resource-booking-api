@@ -1,5 +1,6 @@
 using ResourceBooking.Models;
 using ResourceBooking.Requests;
+
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
@@ -91,8 +92,10 @@ app.MapPost("/bookings",(CreateBookingRequest request) =>
 }
 );
 int nextResourceId=3;
-app.MapPost("/resources",(Resource newResource)=>
-{   
+app.MapPost("/resources",(CreateResourceRequest request)=>
+{   var newResource=new Resource();
+    newResource.Name=request.Name;
+    newResource.Description=request.Description;
     if(string.IsNullOrWhiteSpace(newResource.Name))
         return Results.BadRequest("Nu s a introdus numele");
     newResource.Id=nextResourceId;
