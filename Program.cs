@@ -29,13 +29,16 @@ projector.Description="Descriere";
 var resources=new List<Resource>();
 resources.Add(resource);
 resources.Add(projector);
-app.MapGet("/resources",() => resources);
-app.MapGet("/resources/{id:int}",(int id) => {
-foreach (var item in resources)
-{
-    if(item.Id==id)
+app.MapGet("/resources",async (AppDbContext db) => {
+    var date = await db.Resources.ToListAsync();
+    return Results.Ok(date);
+    });
+app.MapGet("/resources/{id:int}",async (int id,AppDbContext db) => {
+var item = await db.Resources.FindAsync(id);
+
+    if(item!=null)
         return Results.Ok(item);
-}
+
 return Results.NotFound();
 });
 var secondBooking=new Booking();
@@ -46,15 +49,19 @@ secondBooking.End=new DateTimeOffset(2026,9,20,11,0,0,TimeSpan.FromHours(3));
 var bookings=new List<Booking>();
 bookings.Add(booking);
 bookings.Add(secondBooking);
-app.MapGet("/bookings",() => bookings);
-app.MapGet("/bookings/{id:int}",(int id) =>
+app.MapGet("/bookings",async (AppDbContext db) =>
 {
-    {
-        foreach(var item in bookings)
-            if(item.Id==id)
+    var date=await db.Bookings.ToListAsync();
+    return Results.Ok(date);
+});
+app.MapGet("/bookings/{id:int}",async (int id,AppDbContext db) =>
+{
+    
+        var item=await db.Bookings.FindAsync(id);
+            if(item!=null)
              return Results.Ok(item);
              
-    }
+    
 return Results.NotFound();
 });
 Console.WriteLine(booking.Overlaps(secondBooking));
@@ -96,16 +103,15 @@ app.MapPost("/bookings",(CreateBookingRequest request) =>
     return Results.Created($"/bookings/{newBooking.Id}",newBooking);
 }
 );
-int nextResourceId=3;
-app.MapPost("/resources",(CreateResourceRequest request)=>
+
+app.MapPost("/resources",async (CreateResourceRequest request,AppDbContext db)=>
 {   var newResource=new Resource();
     newResource.Name=request.Name;
     newResource.Description=request.Description;
     if(string.IsNullOrWhiteSpace(newResource.Name))
         return Results.BadRequest("Nu s a introdus numele");
-    newResource.Id=nextResourceId;
-    nextResourceId++;
-    resources.Add(newResource);
+    db.Resources.Add(newResource);
+    await db.SaveChangesAsync();
     return Results.Created($"/resources/{newResource.Id}",newResource);
 }
 );
