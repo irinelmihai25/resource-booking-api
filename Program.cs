@@ -75,32 +75,30 @@ foreach(var i in bookings)
     if(candidate.Overlaps(i))
         Console.WriteLine(i.Id);
 }
-int nextBookingId=3;
-app.MapPost("/bookings",(CreateBookingRequest request) =>
+
+app.MapPost("/bookings",async (CreateBookingRequest request,AppDbContext db) =>
 {   var newBooking=new Booking();
     newBooking.ResourceId=request.ResourceId;
-    newBooking.Start=request.Start;
-    newBooking.End=request.End;
-    bool resourceExists=false;
-    foreach(var item in resources)
-    {
-        if(newBooking.ResourceId==item.Id)
-            resourceExists=true;
-    }
+    newBooking.Start=request.Start.ToUniversalTime();
+    newBooking.End=request.End.ToUniversalTime();
+    
+    var resourceExists= await db.Resources.AnyAsync(r=>r.Id==newBooking.ResourceId);
+
     if(!resourceExists)
         return Results.BadRequest("Resursa nu exista.");
     if(newBooking.HasValidPeriod()==false)
         return Results.BadRequest("Sfarsitul trebuie sa fie dupa ora de inceput.");
-    foreach(var item in bookings)
+    var existingBookings = await db.Bookings.Where(b => b.ResourceId == newBooking.ResourceId && !b.IsCancelled).ToListAsync();
+    foreach(var item in existingBookings)
     {
         if(newBooking.Overlaps(item))
             return Results.Conflict("Resursa este deja rezervata in acest interval.");
     }
     
-    newBooking.Id=nextBookingId;
-    nextBookingId++;
-    bookings.Add(newBooking);
-    return Results.Created($"/bookings/{newBooking.Id}",newBooking);
+    
+    db.Bookings.Add(newBooking);
+        await db.SaveChangesAsync();
+        return Results.Created($"/bookings/{newBooking.Id}", newBooking);
 }
 );
 
@@ -115,29 +113,20 @@ app.MapPost("/resources",async (CreateResourceRequest request,AppDbContext db)=>
     return Results.Created($"/resources/{newResource.Id}",newResource);
 }
 );
-app.MapGet("/resources/{resourceId:int}/bookings",(int resourceId) =>{
-    var matchingBookings=new List<Booking>();
-    foreach(var item in bookings)
-    {
-        if (item.ResourceId == resourceId)
-        {
-            matchingBookings.Add(item);
-        }
-    }
-    return Results.Ok(matchingBookings);
+app.MapGet("/resources/{resourceId:int}/bookings",async (int resourceId,AppDbContext db) =>{
+    var matching=await db.Bookings.Where(b => b.ResourceId==resourceId).ToListAsync();
+   
+    return Results.Ok(matching);
 
 });
-app.MapPost("/bookings/{id:int}/cancel",(int id)=>
-{
-    foreach(var item in bookings)
-    {
-        if (item.Id == id)
-        {
-            item.IsCancelled=true;
-            return Results.Ok(item);
-        }
-    }
-    return Results.NotFound("Rezervarea nu exista");
+app.MapPost("/bookings/{id:int}/cancel",async (int id,AppDbContext db)=>
+{   
+    var exists=await db.Bookings.FindAsync(id);
+    if(exists==null)
+        return Results.NotFound("Rezervarea nu exista");
+    exists.IsCancelled=true;
+    await db.SaveChangesAsync();
+    return Results.Ok(exists);
 }
 );
 app.Run();
