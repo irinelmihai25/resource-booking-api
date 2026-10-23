@@ -1,98 +1,96 @@
 # Resource Booking API
 
-A RESTful web API for managing resources (meeting rooms, equipment, workspaces) and scheduling reservations with conflict-prevention business logic, backed by PostgreSQL and Entity Framework Core.
+A RESTful web API for managing shared resources (meeting rooms, equipment, workspaces) and scheduling reservations with conflict-prevention business logic, backed by PostgreSQL and Entity Framework Core.
 
-Built with **C#** and **.NET 10** using **ASP.NET Core Minimal APIs**, fully tested with **xUnit**.
+Built with **C#** and **.NET 10** using **ASP.NET Core Minimal APIs**, verified with an **xUnit** test suite.
 
 ---
 
-## 🚀 Features
+## Architecture and Key Capabilities
 
-* **Resource Management:**
-  * Create, retrieve, and list bookable resources (e.g. conference rooms, laptops, projectors).
-  * Data validation on resource creation.
-* **Reservation Lifecycle & Conflict Prevention:**
-  * Book resources by specifying start and end timestamps.
-  * Automatic normalization to UTC (`DateTimeOffset.ToUniversalTime()`) to prevent timezone issues.
-  * Validation rules ensuring start time strictly precedes end time (`HasValidPeriod`).
-  * Overlap detection (`Overlaps`) preventing double-booking of any active resource.
-  * Booking cancellation endpoint which frees up reserved time slots for new bookings.
-  * Guard against duplicate cancellation attempts.
-* **Persistence & Database:**
+* **Resource Lifecycle Management:**
+  * Endpoints to create, retrieve, and enumerate bookable assets.
+  * Input validation ensuring non-empty resource naming and proper state initialization.
+* **Reservation Lifecycle and Conflict Prevention:**
+  * Reservation scheduling backed by interval ordering verification (`Start < End`).
+  * Automatic normalization to UTC (`DateTimeOffset.ToUniversalTime()`) to ensure consistent temporal evaluation across timezones.
+  * Interval overlap detection preventing double-booking of any active resource.
+  * Explicit cancellation mechanism freeing up previously reserved time slots for new bookings while guarding against redundant cancellation calls.
+* **Persistence Layer:**
   * Relational database persistence using **PostgreSQL** and **Entity Framework Core**.
-  * Code-First workflow with EF Core Migrations.
-  * Asynchronous query execution throughout (`ToListAsync`, `FindAsync`, `AnyAsync`, `SaveChangesAsync`).
+  * Code-first schema migrations (`InitialCreate`).
+  * Fully asynchronous database interactions (`ToListAsync`, `FindAsync`, `AnyAsync`, `SaveChangesAsync`).
 * **Automated Unit Testing:**
-  * Test suite built with **xUnit** covering domain logic.
-  * Verifies valid intervals, inverted intervals, zero-duration bookings, intersecting reservations, adjacent intervals (seamless back-to-back bookings), and cancellation behaviors.
+  * Comprehensive test suite built with **xUnit** isolating the domain model logic.
+  * Verified scenarios include valid intervals, inverted intervals, zero-duration reservations, partial intersections, adjacent intervals (seamless back-to-back bookings), and post-cancellation slot reusability.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Language:** C# 13 / .NET 10
 * **Framework:** ASP.NET Core Minimal APIs
 * **ORM:** Entity Framework Core 10 (Npgsql.EntityFrameworkCore.PostgreSQL)
-* **Database:** PostgreSQL
-* **Testing:** xUnit, .NET Test SDK
+* **Database Engine:** PostgreSQL
+* **Test Framework:** xUnit, Microsoft.NET.Test.Sdk
 
 ---
 
-## 📡 API Endpoints
+## API Specification
 
 ### Resources
 
 | Method | Endpoint | Description | Status Codes |
 |---|---|---|---|
-| `GET` | `/resources` | List all resources | `200 OK` |
-| `GET` | `/resources/{id}` | Get resource details by ID | `200 OK`, `404 Not Found` |
+| `GET` | `/resources` | Retrieve all registered resources | `200 OK` |
+| `GET` | `/resources/{id}` | Retrieve details for a specific resource | `200 OK`, `404 Not Found` |
 | `POST` | `/resources` | Register a new resource | `201 Created`, `400 Bad Request` |
-| `GET` | `/resources/{id}/bookings` | List all bookings for a specific resource | `200 OK` |
+| `GET` | `/resources/{id}/bookings` | Retrieve all bookings associated with a resource | `200 OK` |
 
 ### Bookings
 
 | Method | Endpoint | Description | Status Codes |
 |---|---|---|---|
-| `GET` | `/bookings` | List all bookings across resources | `200 OK` |
-| `GET` | `/bookings/{id}` | Get booking by ID | `200 OK`, `404 Not Found` |
-| `POST` | `/bookings` | Create a new booking (validates overlap) | `201 Created`, `400 Bad Request`, `409 Conflict` |
-| `POST` | `/bookings/{id}/cancel` | Cancel an active booking | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `GET` | `/bookings` | Retrieve all bookings across resources | `200 OK` |
+| `GET` | `/bookings/{id}` | Retrieve booking details by ID | `200 OK`, `404 Not Found` |
+| `POST` | `/bookings` | Create a new booking with conflict validation | `201 Created`, `400 Bad Request`, `409 Conflict` |
+| `POST` | `/bookings/{id}/cancel` | Cancel an active reservation | `200 OK`, `400 Bad Request`, `404 Not Found` |
 
 ---
 
-## 🧠 Business Logic & Domain Rules
+## Domain Rules and Overlap Detection
 
-### Interval Validation & Overlap Detection
-A booking is considered overlapping with an existing reservation if:
-1. Both reservations target the **same resource** (`ResourceId == other.ResourceId`).
-2. Neither reservation has been **cancelled** (`!IsCancelled && !other.IsCancelled`).
-3. The intervals intersect:
+A requested booking overlaps with an existing reservation if all of the following conditions hold:
+1. Both reservations reference the same resource ID (`ResourceId == other.ResourceId`).
+2. Neither reservation is in a cancelled state (`!IsCancelled && !other.IsCancelled`).
+3. The time intervals intersect:
    $$\neg (\text{End} \le \text{other.Start} \lor \text{Start} \ge \text{other.End})$$
 
-Adjacent bookings (where `BookingA.End == BookingB.Start`) are explicitly allowed, enabling efficient back-to-back scheduling.
+Adjacent bookings (where `BookingA.End == BookingB.Start`) are permitted, allowing seamless back-to-back utilization.
 
 ---
 
-## 🧪 Running the Tests
+## Automated Tests
 
-Unit tests are located in `ResourceBooking.Tests` and can be executed via the .NET CLI:
+Unit tests reside in the `ResourceBooking.Tests` project and can be executed via the .NET CLI:
 
 ```bash
 dotnet test
 ```
 
-All 7 test cases covering edge cases (strict ordering, adjacent intervals, cancelled slot reuse) will run and report status.
+All unit tests validate boundary conditions, period ordering, and overlap calculation.
 
 ---
 
-## 🏃 Getting Started Locally
+## Getting Started Locally
 
 ### Prerequisites
 * [.NET 10 SDK](https://dotnet.microsoft.com/)
-* [PostgreSQL](https://www.postgresql.org/) running locally or in Docker
+* [PostgreSQL](https://www.postgresql.org/) instance running locally or via Docker
 
-### Configuration
-Update the database connection string in `appsettings.json` (or set the environment variable):
+### Database Configuration
+Configure the connection string in `appsettings.json` (or supply the corresponding environment variable):
+
 ```json
 {
   "ConnectionStrings": {
@@ -106,8 +104,8 @@ Update the database connection string in `appsettings.json` (or set the environm
 dotnet ef database update
 ```
 
-### Run the Application
+### Run Application
 ```bash
 dotnet run --project ResourceBooking.csproj
 ```
-The API will start and listen on configured HTTP/HTTPS ports (default: `http://localhost:5000` / `https://localhost:5001`).
+The API listens on the configured local ports (default: `http://localhost:5000` / `https://localhost:5001`).
