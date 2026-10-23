@@ -7,3 +7,8 @@
 .env
 .env.*
 !.env.example
+
+# Internal assistant and learning notes (local only)
+AGENTS.md
+LEARNING_PROGRESS.md
+
